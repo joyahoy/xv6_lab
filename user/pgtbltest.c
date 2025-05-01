@@ -119,12 +119,17 @@ superpg_test()
   
   printf("superpg_test starting\n");
   testname = "superpg_test";
-  
+  //sbrk() 只是分配了虚拟地址范围，但没有分配物理内存（访问时才会触发缺页分配），更没有配置大页映射（页表仍然是空的） 
+  //对齐的不是内存内容，而是 要测试的起始地址 s
+  //为什么？因为操作系统 只能从对齐的地址开始配置大页
+
   char *end = sbrk(N);
+
   if (end == 0 || end == (char*)0xffffffffffffffff)
     err("sbrk failed");
   
   uint64 s = SUPERPGROUNDUP((uint64) end);
+  //大页是何时建立的？第一次访问内存时：当你读写 supercheck(s) 中的地址 s 时,CPU 发现页表无映射 → 触发缺页异常,操作系统处理缺页.
   supercheck(s);
   if((pid = fork()) < 0) {
     err("fork");
