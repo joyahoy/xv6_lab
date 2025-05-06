@@ -1,0 +1,4 @@
+a2 13
+
+00000000000006e2 <printf>:
+main中跳转到printf后,ra寄存器为0x3c
