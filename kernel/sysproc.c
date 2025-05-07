@@ -92,3 +92,12 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//trap_lab
+uint64 sys_sigalarm(void) {
+  panic("sys_sigalarm undo");
+}
+
+uint64 sys_sigreturn(void) {
+  panic("sys_sigalarm undo");
+}
