@@ -162,6 +162,9 @@ printf(char *fmt, ...)
 void
 panic(char *s)
 {
+  //trap_lab
+  backtrace();
+
   pr.locking = 0;
   printf("panic: ");
   printf("%s\n", s);
@@ -175,4 +178,38 @@ printfinit(void)
 {
   initlock(&pr.lock, "pr");
   pr.locking = 1;
+}
+
+/*void backtrace() {
+  uint64 fp = r_fp();
+  uint64 pg = PGROUNDDOWN(fp);
+  printf("backtrace:\n");
+  printf("0x00000000%lx\n", *(uint64 *)(fp - 8));
+  // the saved frame pointer lives at fixed offset (-16) from the frame pointer.
+  fp = *(uint64 *)(fp - 16);
+
+  while(1) {
+    if(PGROUNDDOWN(fp) != pg) {
+      break;
+    }
+    //the return address lives at a fixed offset (-8) from the frame pointer of a stackframe.
+    printf("0x00000000%lx\n", *(uint64 *)(fp - 8));
+    fp = *(uint64 *)(fp - 16);
+  }
+}
+*/
+
+void backtrace() {
+  uint64 fp = r_fp();
+  uint64 pg = PGROUNDDOWN(fp);
+  printf("backtrace:\n");
+
+  while (fp != 0 && PGROUNDDOWN(fp) == pg) {
+    // 打印返回地址（fp - 8）
+    uint64 ret_addr = *(uint64 *)(fp - 8);
+    printf("%p\n", (void*)ret_addr);
+
+    // 移动到上一个栈帧（fp - 16）
+    fp = *(uint64 *)(fp - 16);
+  }
 }
