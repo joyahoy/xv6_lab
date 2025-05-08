@@ -104,4 +104,12 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  // Alarm lab 新增字段
+  int alarm_interval;          // 触发 handler 的 tick 间隔（0 表示禁用）
+  uint64 handler_va;           // 用户态 handler 的虚拟地址
+  int passed_ticks;            // 已经经过的 ticks 计数
+  struct trapframe saved_trapframe; // 保存的 trapframe（用于 sigreturn 恢复）
+  int alarm_enabled;           // 是否允许触发 alarm（防止重入）
+
 };

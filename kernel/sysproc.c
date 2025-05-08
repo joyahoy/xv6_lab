@@ -95,9 +95,30 @@ sys_uptime(void)
 
 //trap_lab
 uint64 sys_sigalarm(void) {
-  panic("sys_sigalarm undo");
+  int ticks;
+  uint64 handler;
+
+  argint(0, &ticks);
+  argaddr(1, &handler); 
+  struct proc *p = myproc();
+
+  p->alarm_interval = ticks;
+  p->handler_va = handler;
+  p->passed_ticks = 0;
+  p->alarm_enabled = 1; // 允许触发 alarm
+
+  return 0;
 }
 
 uint64 sys_sigreturn(void) {
-  panic("sys_sigalarm undo");
+  struct proc *p = myproc();
+
+  // 恢复保存的 trapframe
+  *p->trapframe = p->saved_trapframe;
+
+  // 重新允许 alarm 触发
+  p->alarm_enabled = 1;
+
+  // 返回 a0 寄存器（保持系统调用语义)
+  return p->trapframe->a0;
 }
