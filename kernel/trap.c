@@ -16,6 +16,10 @@ void kernelvec();
 
 extern int devintr();
 
+//kalloc.c
+int getref(uint64 pa);
+int decref(uint64 pa);
+
 void
 trapinit(void)
 {
@@ -67,6 +71,52 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if(r_scause() == 15) {
+    uint64 va = r_stval();
+    if(va % PGSIZE != 0) {
+      printf("usertrap(): unaligned va 0x%lx (pid=%d)\n", va, p->pid);
+      setkilled(p);
+      panic("hello");
+    }
+    pte_t *pte;
+    if((pte = walk(p->pagetable, va, 0)) == 0) {
+      panic("store page fault: walk");
+    }
+    // handle store page fault
+    if(*pte & PTE_COW) {
+      uint64 pa = PTE2PA(*pte);
+      // 获取当前物理页的引用计数
+      int ref = getref(pa); // getref()获取引用计数
+      
+      if(ref == 1) {
+        *pte |= PTE_W;
+        *pte &= ~PTE_COW;
+      } else {
+
+        char *mem;
+        if((mem = kalloc()) == 0) {
+          panic("store page fault: kalloc");
+        }
+        memmove(mem, (char*)pa, PGSIZE);
+
+        if(decref(pa)) {
+        // 理论上不应该进入这里，因为ref>1
+          panic("store page fault: decref unexpected page free");
+        }
+
+        uint flags;
+        flags = PTE_FLAGS(*pte);
+        flags |= PTE_W;
+        flags &= ~PTE_COW;
+        if(mappages(p->pagetable, va, PGSIZE, (uint64)mem, flags) != 0) {
+          kfree(mem);
+          panic("store page fault: mappages");
+        }
+      }
+    }else {
+      panic("user want to store wrong address");
+    }
+
   } else {
     printf("usertrap(): unexpected scause 0x%lx pid=%d\n", r_scause(), p->pid);
     printf("            sepc=0x%lx stval=0x%lx\n", r_sepc(), r_stval());
