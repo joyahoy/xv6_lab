@@ -26,18 +26,20 @@ struct {
 //用来记录页面
 
 uint page_refs[PHYSTOP >> 12];
-struct spinlock refs_lock;
+struct {
+  struct spinlock lock;
+}refs;
 
 void pin_page(uint32 index) {
-  acquire(&refs_lock);
+  acquire(&refs.lock);
   page_refs[index]++;
-  release(&refs_lock);
+  release(&refs.lock);
 }
 
 void unpin_page(uint32 index) {
-  acquire(&refs_lock);
+  acquire(&refs.lock);
   page_refs[index]--;
-  release(&refs_lock);
+  release(&refs.lock);
 }
 
 int get_page_ref(uint32 index) {
@@ -46,6 +48,7 @@ int get_page_ref(uint32 index) {
 
 void kinit()
 {
+  initlock(&refs.lock, "refs");
   initlock(&kmem.lock, "kmem");
   freerange(end, (void*)PHYSTOP);
 }
@@ -58,9 +61,9 @@ freerange(void *pa_start, void *pa_end)
   for(;p + PGSIZE <= (char*)pa_end; p += PGSIZE) {
     //初始化引用计数
     uint32 index = ((uint64)p - (uint64)pa_start) / PGSIZE;
-    acquire(&refs_lock);
+    acquire(&refs.lock);
     page_refs[index] = 1;
-    release(&refs_lock);
+    release(&refs.lock);
     kfree(p);
   }
 }
@@ -114,9 +117,9 @@ kalloc(void)
   if(r) {
     memset((char*)r, 5, PGSIZE); // fill with junk
     uint32 index = ((uint64)r - PGROUNDUP((uint64)end)) / PGSIZE;
-    acquire(&refs_lock);
+    acquire(&refs.lock);
     page_refs[index] = 1;
-    release(&refs_lock);
+    release(&refs.lock);
   }
   return (void*)r;
 }

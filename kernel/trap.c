@@ -87,7 +87,7 @@ usertrap(void)
       // 将原来的数据拷贝到新分配的页中
       memmove(mem, (char*)pa, PGSIZE);
       // 对发生错误的虚拟地址重新进行映射
-      uvmunmap(p->pagetable, va, PGSIZE, 1);
+      uvmunmap(p->pagetable, va, 1, 1);
       uint64 flags = (PTE_FLAGS((uint64)(*pte)) | PTE_W) & (~PTE_COW);
       if(mappages(p->pagetable, va, PGSIZE, (uint64)mem, flags) != 0) {
         kfree(mem);

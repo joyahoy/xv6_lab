@@ -385,7 +385,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
       } else {
         uint64 flags = (PTE_FLAGS((uint64)(*pte)) | PTE_W) & ~PTE_COW;
         memmove((char*)page, (char*)pa0, PGSIZE);
-        uvmunmap(pagetable, va0, PGSIZE, 1);
+        uvmunmap(pagetable, va0, 1, 1);
         *pte = PA2PTE((uint64)page) | flags;
         pa0 = (uint64)page;
       }

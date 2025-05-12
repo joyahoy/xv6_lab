@@ -158,10 +158,11 @@ printf(char *fmt, ...)
 
   return 0;
 }
-
+void backtrace();
 void
 panic(char *s)
 {
+  backtrace();
   pr.locking = 0;
   printf("panic: ");
   printf("%s\n", s);
@@ -175,4 +176,19 @@ printfinit(void)
 {
   initlock(&pr.lock, "pr");
   pr.locking = 1;
+}
+
+void backtrace() {
+  uint64 fp = r_fp();
+  uint64 pg = PGROUNDDOWN(fp);
+  printf("backtrace:\n");
+
+  while (fp != 0 && PGROUNDDOWN(fp) == pg) {
+    // 打印返回地址（fp - 8）
+    uint64 ret_addr = *(uint64 *)(fp - 8);
+    printf("%p\n", (void*)ret_addr);
+
+    // 移动到上一个栈帧（fp - 16）
+    fp = *(uint64 *)(fp - 16);
+  }
 }
