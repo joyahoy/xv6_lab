@@ -34,6 +34,7 @@ err(char *why)
 void
 print_pte(uint64 va)
 {
+    //通过系统调用，获取我们的条目
     pte_t pte = (pte_t) pgpte((void *) va);
     printf("va 0x%lx pte 0x%lx pa 0x%lx perm 0x%lx\n", va, pte, PTE2PA(pte), PTE_FLAGS(pte));
 }
